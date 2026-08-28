@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>History: {{ device.serial_number }}</h2>
+<p><a href="{% url 'device_detail' device.pk %}">&larr; Back to device</a></p>
+
+<table>
+    <tr>
+        <th>Status</th><th>Date &amp; Time</th><th>Changed By</th><th>Note</th>
+    </tr>
+    {% for entry in device.status_history.all %}
+    <tr>
+        <td><span class="status-badge status-{{ entry.to_status|lower }}">{{ entry.to_status }}</span></td>
+        <td>{{ entry.timestamp }}</td>
+        <td>{{ entry.changed_by }}</td>
+        <td>{% if entry.note %}"{{ entry.note }}"{% else %}—{% endif %}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="4">No history yet.</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+<head>
+    <title>Handover Sleeve — {{ device.serial_number }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 650px; margin: 40px auto; color: #2E2A38; }
+        h1 { color: #4B2E83; border-bottom: 3px solid #F5A623; padding-bottom: 8px; }
+        .field { margin: 10px 0; }
+        .field label { font-weight: bold; display: inline-block; width: 160px; }
+        .note-box { background: #F7F6FA; border: 1px solid #DDD8E8; padding: 10px; margin-top: 4px; }
+        .signatures { display: flex; justify-content: space-between; margin-top: 60px; }
+        .signature-line { border-top: 1px solid #2E2A38; width: 220px; text-align: center; padding-top: 6px; }
+        .print-btn { margin-bottom: 20px; }
+        @media print {
+            .print-btn { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <button class="print-btn" onclick="window.print()">Print This Sleeve</button>
+
+    <h1>CBE Gulele District — Device Handover Sleeve</h1>
+
+    <div class="field"><label>Serial Number:</label> {{ device.serial_number }}</div>
+    <div class="field"><label>Tag Number:</label> {{ device.tag_number|default:"—" }}</div>
+    <div class="field"><label>Device Type:</label> {{ device.get_device_type_display }}</div>
+    <div class="field"><label>Model:</label> {{ device.model|default:"—" }}</div>
+    <div class="field"><label>Branch:</label> {{ device.branch.name }}</div>
+    <div class="field"><label>Status:</label> {{ device.get_status_display }}</div>
+    <div class="field"><label>Received:</label> {{ device.date_received }}</div>
+    <div class="field"><label>Processed By:</label> {{ device.logged_by }}</div>
+
+    <div class="field">
+        <label>Repair Note:</label>
+        <div class="note-box">{% if last_entry.note %}{{ last_entry.note }}{% else %}No note recorded.{% endif %}</div>
+    </div>
+
+    <div class="signatures">
+        <div class="signature-line">IT Support Staff</div>
+        <div class="signature-line">Branch Representative</div>
+    </div>
+</body>
+</html>

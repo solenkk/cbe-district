@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>{{ device.serial_number }}</h2>
+<p>Type: {{ device.get_device_type_display }} | Branch: {{ device.branch.name }} | Model: {{ device.model|default:"—" }}</p>
+<p>Status: <span class="status-badge status-{{ device.status|lower }}">{{ device.get_status_display }}</span></p>
+<p>Notes: {{ device.condition_notes|default:"None" }}</p>
+
+{% if device.status == "RETURNED_TO_BRANCH" %}
+<a href="{% url 'device_sleeve' device.pk %}" class="btn" target="_blank">Print Handover Sleeve</a>
+{% endif %}
+
+{% if can_edit %}
+<h3>Change Status</h3>
+{% if error %}<p style="color: red">{{ error }}</p>{% endif %}
+{% if status_form.fields.new_status.choices %}
+<form method="post">
+    {% csrf_token %}
+    {{ status_form.note }}
+    <div class="status-buttons">
+        {% for value, label in status_form.fields.new_status.choices %}
+        <button type="submit" name="new_status" value="{{ value }}" class="status-badge status-{{ value|lower }} btn-status">{{ label }}</button>
+        {% endfor %}
+    </div>
+</form>
+{% else %}
+<p>No further status changes available — this device has reached a final state.</p>
+{% endif %}
+{% endif %}
+
+<h3>Installed Salvaged Components</h3>
+<table>
+    <tr>
+        <th>Component</th><th>From Device</th><th>Installed By</th><th>Installed At</th><th>Note</th>{% if can_edit %}<th>Action</th>{% endif %}
+    </tr>
+    {% for usage in installed_components %}
+    <tr>
+        <td>{{ usage.component.get_component_type_display }}</td>
+        <td><a href="{% url 'device_detail' usage.component.source_device.pk %}">{{ usage.component.source_device.serial_number }}</a></td>
+        <td>{{ usage.installed_by }}</td>
+        <td>{{ usage.installed_at }}</td>
+        <td>{{ usage.installation_note|default:"—" }}</td>
+        {% if can_edit %}
+        <td>
+            <form method="post" action="{% url 'device_remove_component' device.pk usage.component.pk %}" style="display: inline; margin: 0; padding: 0; box-shadow: none; background: none;">
+                {% csrf_token %}
+                <button type="submit" style="background: #c0392b; color: white; padding: 4px 10px; margin: 0; font-size: 0.85rem;">Remove</button>
+            </form>
+        </td>
+        {% endif %}
+    </tr>
+    {% empty %}
+    <tr>
+        <td colspan="{% if can_edit %}6{% else %}5{% endif %}">No salvaged components currently installed on this device.</td>
+    </tr>
+    {% endfor %}
+</table>
+
+{% if can_edit %}
+{% if install_form.fields.component.queryset %}
+<h4>Install a Component</h4>
+<form method="post" action="{% url 'device_install_component' device.pk %}">
+    {% csrf_token %}
+    {{ install_form.as_p }}
+    <button type="submit">Install Component</button>
+</form>
+{% endif %}
+
+<p><a href="{% url 'component_create' %}?device={{ device.pk }}" class="btn" style="background: var(--cbe-purple); color: white;">+ Salvage Component From This Device</a></p>
+{% endif %}
+
+<p><a href="{% url 'device_history' device.pk %}" class="btn">View Full History</a></p>
+{% endblock %}

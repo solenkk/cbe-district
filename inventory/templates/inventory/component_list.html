@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Salvaged Components</h2>
+{% if user.role == "IT_STAFF" %}
+<a href="{% url 'component_create' %}" class="btn">+ Log Salvaged Component</a>
+{% endif %}
+
+<form method="get" class="filter-form">
+    <select name="status" aria-label="Filter by Status">
+        <option value="">All Statuses</option>
+        {% for value, label in status_choices %}
+        <option value="{{ value }}" {% if value == selected_status %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+
+    <select name="component_type" aria-label="Filter by Component Type">
+        <option value="">All Types</option>
+        {% for value, label in component_type_choices %}
+        <option value="{{ value }}" {% if value == selected_component_type %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+
+    <button type="submit">Filter</button>
+    <a href="{% url 'component_list' %}">Clear</a>
+</form>
+
+<table>
+    <tr>
+        <th>Type</th><th>Status</th><th>Source Device</th><th>Branch</th><th>Date Logged</th>
+    </tr>
+    {% for component in components %}
+    <tr>
+        <td>{{ component.get_component_type_display }}</td>
+        <td><span class="status-badge status-{{ component.status|lower }}">{{ component.get_status_display }}</span></td>
+        <td><a href="{% url 'device_detail' component.source_device.pk %}">{{ component.source_device.serial_number }}</a></td>
+        <td>{{ component.source_device.branch.name }}</td>
+        <td>{{ component.date_logged }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="5">No components match your filters.</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

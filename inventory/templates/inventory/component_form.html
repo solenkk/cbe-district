@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Log Salvaged Component</h2>
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Save Component</button>
+    <a href="{% url 'component_list' %}" style="margin-left: 10px;">Cancel</a>
+</form>
+{% endblock %}

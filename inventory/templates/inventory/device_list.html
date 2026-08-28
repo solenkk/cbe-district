@@ -1,0 +1,53 @@
+
+{% extends "base.html" %}
+{% block content %}
+<h2>Devices</h2>
+{% if user.role == "IT_STAFF" %}
+<a href="{% url 'device_create' %}" class="btn">+ Log New Device</a>
+{% endif %}
+
+<form method="get" class="filter-form">
+    <input type="text" name="q" placeholder="Search serial or tag..." value="{{ query }}" aria-label="Search by serial or tag number">
+
+    <select name="status" aria-label="Filter by Status">
+        <option value="">All Statuses</option>
+        {% for value, label in status_choices %}
+        <option value="{{ value }}" {% if value == selected_status %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+
+    <select name="device_type" aria-label="Filter by Device Type">
+        <option value="">All Types</option>
+        {% for value, label in device_type_choices %}
+        <option value="{{ value }}" {% if value == selected_device_type %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+
+    <select name="branch" aria-label="Filter by Branch">
+        <option value="">All Branches</option>
+        {% for branch in branches %}
+        <option value="{{ branch.id }}" {% if branch.id|stringformat:"s" == selected_branch %}selected{% endif %}>{{ branch.name }}</option>
+        {% endfor %}
+    </select>
+
+    <button type="submit">Filter</button>
+    <a href="{% url 'device_list' %}">Clear</a>
+</form>
+
+<table>
+    <tr>
+        <th>Serial</th><th>Type</th><th>Branch</th><th>Status</th><th>Received</th>
+    </tr>
+    {% for device in devices %}
+    <tr>
+        <td><a href="{% url 'device_detail' device.pk %}">{{ device.serial_number }}</a></td>
+        <td>{{ device.get_device_type_display }}</td>
+        <td>{{ device.branch.name }}</td>
+        <td><span class="status-badge status-{{ device.status|lower }}">{{ device.get_status_display }}</span></td>
+        <td>{{ device.date_received }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="5">No devices match your filters.</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

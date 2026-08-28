@@ -1,0 +1,24 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CBE Gulele District ITMS{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  </head>
+  <body>
+    <nav>
+      {% if user.is_authenticated %}
+      <span>{{ user.get_full_name|default:user.username }} ({{ user.get_role_display }})</span>
+      | <a href="{% url 'device_list' %}">Devices</a>
+      | <a href="{% url 'component_list' %}">Components</a>
+      | <a href="{% url 'report_list' %}">Reports</a>
+      | <form method="post" action="{% url 'logout' %}" class="logout-form">{% csrf_token %}<button type="submit">Logout</button></form>
+      {% endif %}
+    </nav>
+    <div class="page">
+      {% block content %}{% endblock %}
+    </div>
+  </body>
+</html>
