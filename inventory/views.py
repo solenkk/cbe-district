@@ -1,19 +1,23 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+import json
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
 from branches.models import Branch
-from .models import Device, StatusHistory, Component, ComponentUsage
-from .forms import DeviceForm, StatusChangeForm, ComponentLogForm, ComponentInstallForm
+from .models import Device, StatusHistory, Component, ComponentUsage, DisposalRecommendation
+from .forms import DeviceForm, StatusChangeForm, ComponentLogForm, ComponentInstallForm, DisposalRecommendationForm, DisposalReviewForm
 from .services import (
     change_device_status,
     InvalidStatusTransition,
     log_component,
     install_component,
     remove_component,
+    create_disposal_recommendation,
+    approve_disposal_recommendation,
+    reject_disposal_recommendation,
 )
 
 
@@ -24,6 +28,51 @@ def it_staff_required(view_func):
             raise PermissionDenied("Only IT Support Staff can perform this action.")
         return view_func(request, *args, **kwargs)
     return wrapper
+
+
+@login_required
+def dashboard(request):
+    context = {}
+    context["device_count"] = Device.objects.count()
+    context["recent_devices_count"] = Device.objects.filter(status=Device.Status.RECEIVED).count()
+    context["component_count"] = Component.objects.count()
+    context["in_stock_count"] = Component.objects.filter(status=Component.Status.IN_STOCK).count()
+
+    context["active_devices_count"] = Device.objects.filter(status=Device.Status.RETURNED_TO_BRANCH).count()
+    context["maintenance_devices_count"] = Device.objects.filter(status__in=[
+        Device.Status.RECEIVED, 
+        Device.Status.DIAGNOSED_FUNCTIONAL, 
+        Device.Status.DIAGNOSED_NOT_FUNCTIONAL, 
+        Device.Status.REPAIRED
+    ]).count()
+    context["disposed_devices_count"] = Device.objects.filter(status__in=[
+        Device.Status.DISPOSED,
+        Device.Status.FOR_DISPOSAL
+    ]).count()
+
+    context["attention_devices"] = Device.objects.exclude(status__in=[
+        Device.Status.RETURNED_TO_BRANCH, 
+        Device.Status.DISPOSED
+    ]).select_related("branch").order_by("-date_received")[:5]
+
+    context["recent_activity"] = StatusHistory.objects.select_related(
+        "device", "changed_by"
+    ).order_by("-timestamp")[:6]
+    
+    context["recent_devices"] = Device.objects.select_related("branch").order_by("-date_received")[:5]
+
+    if request.user.role == request.user.Role.MANAGER:
+        context["pending_disposals_count"] = DisposalRecommendation.objects.filter(status=DisposalRecommendation.Status.PENDING).count()
+    else:
+        context["my_recent_activity"] = StatusHistory.objects.filter(changed_by=request.user).order_by("-timestamp")[:5]
+
+    devices_by_status = list(Device.objects.values('status').annotate(count=Count('status')))
+    status_labels = [dict(Device.Status.choices).get(d['status'], d['status']) for d in devices_by_status]
+    status_counts = [d['count'] for d in devices_by_status]
+    context["chart_labels"] = json.dumps(status_labels)
+    context["chart_data"] = json.dumps(status_counts)
+
+    return render(request, "inventory/dashboard.html", context)
 
 
 @login_required
@@ -40,7 +89,10 @@ def device_list(request):
             Q(serial_number__icontains=query) | Q(tag_number__icontains=query)
         )
     if status:
-        devices = devices.filter(status=status)
+        if "," in status:
+            devices = devices.filter(status__in=status.split(","))
+        else:
+            devices = devices.filter(status=status)
     if device_type:
         devices = devices.filter(device_type=device_type)
     if branch_id:
@@ -70,6 +122,7 @@ def device_create(request):
             device.save()
             StatusHistory.objects.create(
                 device=device,
+                branch=device.branch,
                 from_status="",
                 to_status=device.status,
                 changed_by=request.user,
@@ -109,6 +162,9 @@ def device_detail(request, pk):
         removed_at__isnull=True
     ).select_related("component", "component__source_device", "installed_by")
     install_form = ComponentInstallForm()
+    
+    pending_recommendation = device.disposal_recommendations.filter(status=DisposalRecommendation.Status.PENDING).first()
+    rejected_recommendation = device.disposal_recommendations.filter(status=DisposalRecommendation.Status.REJECTED).order_by("-reviewed_at").first()
 
     return render(request, "inventory/device_detail.html", {
         "device": device,
@@ -117,6 +173,8 @@ def device_detail(request, pk):
         "install_form": install_form,
         "error": error,
         "can_edit": request.user.role == request.user.Role.IT_STAFF,
+        "pending_recommendation": pending_recommendation,
+        "rejected_recommendation": rejected_recommendation,
     })
 
 
@@ -202,3 +260,85 @@ def component_create(request):
         form = ComponentLogForm(initial={"source_device": initial_device} if initial_device else None)
 
     return render(request, "inventory/component_form.html", {"form": form})
+
+
+@it_staff_required
+def disposal_recommendation_create(request, pk):
+    device = get_object_or_404(Device, pk=pk)
+    
+    if device.status != Device.Status.FOR_DISPOSAL:
+        messages.error(request, "Device must be FOR_DISPOSAL to recommend disposal.")
+        return redirect("device_detail", pk=device.pk)
+        
+    if request.method == "POST":
+        form = DisposalRecommendationForm(request.POST)
+        if form.is_valid():
+            try:
+                create_disposal_recommendation(
+                    device=device,
+                    user=request.user,
+                    reason=form.cleaned_data["reason"]
+                )
+                messages.success(request, "Disposal recommendation submitted.")
+                return redirect("device_detail", pk=device.pk)
+            except ValueError as e:
+                messages.error(request, str(e))
+    else:
+        form = DisposalRecommendationForm()
+        
+    return render(request, "inventory/disposal_recommendation_form.html", {"form": form, "device": device})
+
+
+@login_required
+def disposal_recommendation_list(request):
+    if request.user.role != request.user.Role.MANAGER:
+        raise PermissionDenied("Only District Managers can view pending disposal recommendations.")
+        
+    recommendations = DisposalRecommendation.objects.filter(
+        status=DisposalRecommendation.Status.PENDING
+    ).select_related("device", "device__branch", "recommended_by")
+    
+    return render(request, "inventory/disposal_recommendation_list.html", {"recommendations": recommendations})
+
+
+@login_required
+def disposal_recommendation_review(request, pk):
+    if request.user.role != request.user.Role.MANAGER:
+        raise PermissionDenied("Only District Managers can review disposal recommendations.")
+        
+    recommendation = get_object_or_404(
+        DisposalRecommendation.objects.select_related("device", "device__branch", "recommended_by"), 
+        pk=pk
+    )
+    
+    if recommendation.status != DisposalRecommendation.Status.PENDING:
+        messages.info(request, "This recommendation has already been reviewed.")
+        return redirect("disposal_recommendation_list")
+        
+    if request.method == "POST":
+        form = DisposalReviewForm(request.POST)
+        if form.is_valid():
+            action = form.cleaned_data["action"]
+            note = form.cleaned_data["note"]
+            
+            try:
+                if action == "APPROVE":
+                    approve_disposal_recommendation(
+                        recommendation=recommendation, user=request.user, note=note
+                    )
+                    messages.success(request, "Disposal approved.")
+                else:
+                    reject_disposal_recommendation(
+                        recommendation=recommendation, user=request.user, note=note
+                    )
+                    messages.success(request, "Disposal rejected.")
+                return redirect("disposal_recommendation_list")
+            except ValueError as e:
+                messages.error(request, str(e))
+    else:
+        form = DisposalReviewForm()
+        
+    return render(request, "inventory/disposal_recommendation_review.html", {
+        "recommendation": recommendation,
+        "form": form
+    })

@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Dynamic Audit Report{% endblock %}
+
+{% block content %}
+<h1>Dynamic Audit Report</h1>
+
+<div class="report-container">
+    <!-- Horizontal Filters -->
+    <div style="background: #fff; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        <form method="get" action="{% url 'dynamic_report' %}" style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
+            
+            <div style="display: flex; flex-direction: column;">
+                <label style="font-size: 0.85rem; margin-bottom: 0.2rem; color: #555;">Date From</label>
+                <input type="date" name="date_from" value="{{ date_from }}" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+            
+            <div style="display: flex; flex-direction: column;">
+                <label style="font-size: 0.85rem; margin-bottom: 0.2rem; color: #555;">Date To</label>
+                <input type="date" name="date_to" value="{{ date_to }}" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+            
+            <div style="display: flex; flex-direction: column;">
+                <label style="font-size: 0.85rem; margin-bottom: 0.2rem; color: #555;">Activity</label>
+                <select name="activity" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; min-width: 120px;">
+                    <option value="">All Activities</option>
+                    {% for val, label in activity_choices %}
+                    <option value="{{ val }}" {% if selected_activity == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div style="display: flex; flex-direction: column;">
+                <label style="font-size: 0.85rem; margin-bottom: 0.2rem; color: #555;">IT Staff</label>
+                <select name="staff_id" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; min-width: 120px;">
+                    <option value="">All Staff</option>
+                    {% for staff in staff_members %}
+                    <option value="{{ staff.id }}" {% if selected_staff == staff.id|stringformat:"s" %}selected{% endif %}>{{ staff.get_full_name|default:staff.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div style="display: flex; flex-direction: column;">
+                <label style="font-size: 0.85rem; margin-bottom: 0.2rem; color: #555;">Branch</label>
+                <select name="branch_id" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; min-width: 120px;">
+                    <option value="">All Branches</option>
+                    {% for branch in branches %}
+                    <option value="{{ branch.id }}" {% if selected_branch == branch.id|stringformat:"s" %}selected{% endif %}>{{ branch.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div style="display: flex; flex-direction: column;">
+                <label style="font-size: 0.85rem; margin-bottom: 0.2rem; color: #555;">Device Type</label>
+                <select name="device_type" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; min-width: 120px;">
+                    <option value="">All Types</option>
+                    {% for val, label in device_types %}
+                    <option value="{{ val }}" {% if selected_device_type == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div style="display: flex; flex-direction: column;">
+                <label style="font-size: 0.85rem; margin-bottom: 0.2rem; color: #555;">Serial Number</label>
+                <input type="text" name="serial_number" value="{{ serial_number }}" placeholder="Search serial..." style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; min-width: 120px;">
+            </div>
+            
+            <div style="display: flex; gap: 0.5rem; align-items: flex-end;">
+                <button type="submit" class="btn" style="padding: 0.55rem 1rem; background: #f39c12;">Filter</button>
+                <a href="{% url 'dynamic_report' %}" style="padding: 0.55rem 1rem; color: #34495e; text-decoration: underline; font-size: 0.9rem;">Clear</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Results Area -->
+    <main class="report-results" style="flex: 3; min-width: 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3>Audit Events ({{ activities|length }})</h3>
+            <a href="{% url 'dynamic_report_export' %}?date_from={{ date_from }}&date_to={{ date_to }}&activity={{ selected_activity }}&staff_id={{ selected_staff }}&branch_id={{ selected_branch }}&device_type={{ selected_device_type }}&serial_number={{ serial_number }}" class="btn">Export CSV</a>
+        </div>
+        
+        <div style="overflow-x: auto; margin-top: 1rem;">
+            <table style="width: 100%; white-space: nowrap;">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Activity</th>
+                        <th>Device</th>
+                        <th>Serial Number</th>
+                        <th>Branch</th>
+                        <th>IT Staff</th>
+                        <th>Previous</th>
+                        <th>New Status</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for act in activities %}
+                    <tr>
+                        <td>{{ act.timestamp|date:"Y-m-d H:i" }}</td>
+                        <td>
+                            {% if act.to_status == "RETURNED_TO_BRANCH" %}Sent
+                            {% elif act.to_status == "REPAIRED" %}Maintained
+                            {% else %}{{ act.get_to_status_display }}
+                            {% endif %}
+                        </td>
+                        <td>{{ act.device.get_device_type_display|default:act.device.device_type }}</td>
+                        <td><a href="{% url 'device_detail' pk=act.device.pk %}">{{ act.device.serial_number }}</a></td>
+                        <td>{{ act.branch.name|default:act.device.branch.name }}</td>
+                        <td>{{ act.changed_by.get_full_name|default:act.changed_by.username }}</td>
+                        <td>{{ act.get_from_status_display }}</td>
+                        <td>{{ act.get_to_status_display }}</td>
+                        <td>{{ act.note|truncatechars:30 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" style="text-align: center;">No audit events match your filters.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+{% endblock %}

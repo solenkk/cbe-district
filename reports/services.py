@@ -55,3 +55,36 @@ def generate_report(*, period_start, period_end, user) -> Report:
     ReportLine.objects.bulk_create(lines)
 
     return report
+
+
+def get_activity_queryset(date_from=None, date_to=None, activity=None, staff_id=None, branch_id=None, device_type=None, serial_number=None):
+    from inventory.models import StatusHistory, Device
+    
+    qs = StatusHistory.objects.select_related("device", "device__branch", "branch", "changed_by").all()
+    
+    if date_from:
+        qs = qs.filter(timestamp__gte=date_from)
+    if date_to:
+        qs = qs.filter(timestamp__date__lte=date_to)
+        
+    if branch_id:
+        qs = qs.filter(branch_id=branch_id)
+        
+    if staff_id:
+        qs = qs.filter(changed_by_id=staff_id)
+        
+    if device_type:
+        qs = qs.filter(device__device_type=device_type)
+        
+    if serial_number:
+        qs = qs.filter(device__serial_number__icontains=serial_number)
+        
+    if activity:
+        if activity == "SENT":
+            qs = qs.filter(to_status=Device.Status.RETURNED_TO_BRANCH)
+        elif activity == "MAINTAINED":
+            qs = qs.filter(to_status=Device.Status.REPAIRED)
+        else:
+            qs = qs.filter(to_status=activity)
+
+    return qs.order_by("-timestamp")

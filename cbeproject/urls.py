@@ -20,17 +20,13 @@ from django.contrib.auth import views as auth_views
 from django.shortcuts import redirect
 
 
-def root_redirect(request):
-    if request.user.is_authenticated:
-        return redirect("device_list")
-    return redirect("login")
-
 
 urlpatterns = [
-    path("", root_redirect, name="root"),
+    path("", include("inventory.dashboard_urls")),
     path("admin/", admin.site.urls),
     path("login/", auth_views.LoginView.as_view(template_name="registration/login.html"), name="login"),
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),
     path("devices/", include("inventory.urls")),
+    path("components/", include("inventory.components_urls")),
     path("reports/", include("reports.urls")),
 ]

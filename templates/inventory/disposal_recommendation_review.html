@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Review Disposal - {{ recommendation.device.serial_number }}{% endblock %}
+
+{% block content %}
+<h1>Review Disposal Recommendation</h1>
+
+{% if messages %}
+  <ul class="messages">
+    {% for message in messages %}
+      <li class="{{ message.tags }}">{{ message }}</li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
+<div class="review-details">
+    <h3>Device Details</h3>
+    <ul>
+        <li><strong>Serial Number:</strong> <a href="{% url 'device_detail' pk=recommendation.device.pk %}">{{ recommendation.device.serial_number }}</a></li>
+        <li><strong>Branch:</strong> {{ recommendation.device.branch.name }}</li>
+        <li><strong>Type:</strong> {{ recommendation.device.get_device_type_display }}</li>
+        <li><strong>Condition Notes:</strong> {{ recommendation.device.condition_notes }}</li>
+    </ul>
+
+    <h3>Recommendation Details</h3>
+    <ul>
+        <li><strong>Recommended By:</strong> {{ recommendation.recommended_by.get_full_name|default:recommendation.recommended_by.username }}</li>
+        <li><strong>Date:</strong> {{ recommendation.recommended_at|date:"Y-m-d H:i" }}</li>
+        <li><strong>IT Support Comment:</strong> {{ recommendation.reason }}</li>
+    </ul>
+</div>
+
+<form method="post" style="margin-top: 2rem;">
+    {% csrf_token %}
+    
+    <p>
+        {{ form.note.label_tag }}<br>
+        {{ form.note }}
+        {{ form.note.errors }}
+    </p>
+
+    <div style="margin-top: 1rem;">
+        <button type="submit" name="action" value="APPROVE" class="btn btn-success" style="background-color: #28a745; color: white;">Approve Disposal</button>
+        <button type="submit" name="action" value="REJECT" class="btn btn-danger" style="background-color: #dc3545; color: white;">Reject Disposal</button>
+        <a href="{% url 'disposal_recommendation_list' %}" class="btn" style="margin-left: 10px;">Cancel</a>
+    </div>
+</form>
+{% endblock %}

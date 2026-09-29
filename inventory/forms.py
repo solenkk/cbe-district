@@ -24,7 +24,7 @@ class StatusChangeForm(forms.Form):
 
 class ComponentLogForm(forms.Form):
     source_device = forms.ModelChoiceField(
-        queryset=Device.objects.select_related("branch").order_by("-date_received"),
+        queryset=Device.objects.exclude(status=Device.Status.RETURNED_TO_BRANCH).select_related("branch").order_by("-date_received"),
         label="Source Device (Donor)",
     )
     component_type = forms.ChoiceField(
@@ -42,4 +42,24 @@ class ComponentInstallForm(forms.Form):
         widget=forms.Textarea(attrs={"rows": 2, "placeholder": "Optional installation details (e.g. upgraded slot)"}),
         required=False,
         label="Installation Note",
+    )
+
+
+class DisposalRecommendationForm(forms.Form):
+    reason = forms.CharField(
+        widget=forms.Textarea(attrs={"rows": 3, "placeholder": "Explain why this device should be disposed."}),
+        label="Reason for Disposal",
+        required=True
+    )
+
+
+class DisposalReviewForm(forms.Form):
+    action = forms.ChoiceField(
+        choices=[("APPROVE", "Approve Disposal"), ("REJECT", "Reject Disposal")],
+        widget=forms.RadioSelect
+    )
+    note = forms.CharField(
+        widget=forms.Textarea(attrs={"rows": 3, "placeholder": "Optional note..."}),
+        required=False,
+        label="Review Note"
     )

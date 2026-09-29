@@ -1,0 +1,17 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block branding %}
+<h1 id="site-name" style="display: flex; align-items: center; margin: 0;">
+    <a href="{% url 'admin:index' %}" style="display: flex; align-items: center; text-decoration: none;">
+        <img src="{% static 'img/logo.svg' %}" alt="CBE Logo" style="height: 40px; margin-right: 10px; object-fit: contain;">
+        CBE ITMS Administration
+    </a>
+</h1>
+{% endblock %}
+
+{% block nav-global %}
+<div id="custom-nav-global" style="margin-bottom: 10px;">
+    <a href="{% url 'dashboard' %}" style="font-weight: bold;">&larr; Back to IT Asset Dashboard</a>
+</div>
+{% endblock %}

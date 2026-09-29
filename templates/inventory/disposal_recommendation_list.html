@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Pending Disposal Recommendations{% endblock %}
+
+{% block content %}
+<h1>Pending Disposal Recommendations</h1>
+
+{% if messages %}
+  <ul class="messages">
+    {% for message in messages %}
+      <li class="{{ message.tags }}">{{ message }}</li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
+<table>
+    <thead>
+        <tr>
+            <th>Device</th>
+            <th>Branch</th>
+            <th>Recommended By</th>
+            <th>Date</th>
+            <th>Reason</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for rec in recommendations %}
+        <tr>
+            <td><a href="{% url 'device_detail' pk=rec.device.pk %}">{{ rec.device.serial_number }}</a></td>
+            <td>{{ rec.device.branch.name }}</td>
+            <td>{{ rec.recommended_by.get_full_name|default:rec.recommended_by.username }}</td>
+            <td>{{ rec.recommended_at|date:"Y-m-d H:i" }}</td>
+            <td>{{ rec.reason|truncatewords:10 }}</td>
+            <td>
+                <a href="{% url 'disposal_recommendation_review' pk=rec.pk %}" class="btn">Review</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="6">No pending disposal recommendations.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

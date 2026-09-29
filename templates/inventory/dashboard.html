@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Dashboard - CBE ITMS{% endblock %}
+
+{% block content %}
+<div class="dashboard-overview-header">
+    <h1>Dashboard</h1>
+    <p>Asset management overview for CBE Gulele District &bull; Last updated: {% now "jS F Y, H:i" %}</p>
+</div>
+
+<div class="kpi-grid">
+    <a href="{% url 'device_list' %}" class="kpi-card" aria-label="View total devices">
+        <div class="kpi-card-header">
+            <span class="kpi-label">Total Devices</span>
+            <svg class="kpi-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M21 2H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h7v2H8v2h8v-2h-2v-2h7c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H3V4h18v12z" />
+            </svg>
+        </div>
+        <span class="kpi-value">{{ device_count }}</span>
+        <div class="kpi-card-footer">
+            <span class="kpi-card-desc">All registered devices</span>
+            <span class="kpi-arrow">&rarr;</span>
+        </div>
+    </a>
+    <a href="{% url 'device_list' %}?status=RETURNED_TO_BRANCH" class="kpi-card" aria-label="View active devices">
+        <div class="kpi-card-header">
+            <span class="kpi-label">Active</span>
+            <svg class="kpi-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+            </svg>
+        </div>
+        <span class="kpi-value">{{ active_devices_count }}</span>
+        <div class="kpi-card-footer">
+            <span class="kpi-card-desc">Operational devices</span>
+            <span class="kpi-arrow">&rarr;</span>
+        </div>
+    </a>
+    <a href="{% url 'device_list' %}?status=RECEIVED,DIAGNOSED_FUNCTIONAL,DIAGNOSED_NOT_FUNCTIONAL,REPAIRED" class="kpi-card" aria-label="View devices in maintenance">
+        <div class="kpi-card-header">
+            <span class="kpi-label">Maintenance</span>
+            <svg class="kpi-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z" />
+            </svg>
+        </div>
+        <span class="kpi-value">{{ maintenance_devices_count }}</span>
+        <div class="kpi-card-footer">
+            <span class="kpi-card-desc">Devices requiring maintenance</span>
+            <span class="kpi-arrow">&rarr;</span>
+        </div>
+    </a>
+    <a href="{% url 'device_list' %}?status=FOR_DISPOSAL,DISPOSED" class="kpi-card" aria-label="View disposed devices">
+        <div class="kpi-card-header">
+            <span class="kpi-label">Disposed</span>
+            <svg class="kpi-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+            </svg>
+        </div>
+        <span class="kpi-value">{{ disposed_devices_count }}</span>
+        <div class="kpi-card-footer">
+            <span class="kpi-card-desc">Disposed devices</span>
+            <span class="kpi-arrow">&rarr;</span>
+        </div>
+    </a>
+    <a href="{% url 'component_list' %}" class="kpi-card" aria-label="View all components">
+        <div class="kpi-card-header">
+            <span class="kpi-label">Total Components</span>
+            <svg class="kpi-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M2 4v16h20V4H2zm2 14V6h16v12H4zM7 9h2v2H7zm0 4h2v2H7zm4-4h2v2h-2zm0 4h2v2h-2zm4-4h2v2h-2zm0 4h2v2h-2z" />
+            </svg>
+        </div>
+        <span class="kpi-value">{{ component_count }}</span>
+        <div class="kpi-card-footer">
+            <span class="kpi-card-desc">All inventory components</span>
+            <span class="kpi-arrow">&rarr;</span>
+        </div>
+    </a>
+    <a href="{% url 'component_list' %}?status=IN_STOCK" class="kpi-card" aria-label="View in stock components">
+        <div class="kpi-card-header">
+            <span class="kpi-label">In Stock</span>
+            <svg class="kpi-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 10h2v7H7zm4-3h2v10h-2zm4 6h2v4h-2z" />
+            </svg>
+        </div>
+        <span class="kpi-value">{{ in_stock_count }}</span>
+        <div class="kpi-card-footer">
+            <span class="kpi-card-desc">Available components</span>
+            <span class="kpi-arrow">&rarr;</span>
+        </div>
+    </a>
+</div>
+
+<div class="quick-actions">
+    {% if user.role == "IT_STAFF" %}
+    <a href="{% url 'device_create' %}" class="btn">
+        <svg class="icon" style="width:16px;height:16px;vertical-align:middle;margin-right:4px;" viewBox="0 0 24 24">
+            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+        </svg> Add Device
+    </a>
+    <a href="{% url 'component_create' %}" class="btn btn-secondary">
+        <svg class="icon" style="width:16px;height:16px;vertical-align:middle;margin-right:4px;" viewBox="0 0 24 24">
+            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+        </svg> Add Component
+    </a>
+    {% endif %}
+    {% if user.role == "MANAGER" %}
+    <a href="{% url 'disposal_recommendation_list' %}" class="btn">View Disposals ({{ pending_disposals_count }})</a>
+    {% endif %}
+    <a href="{% url 'dynamic_report' %}" class="btn btn-secondary">Generate Report</a>
+</div>
+
+<div class="dashboard-columns">
+    <div class="card">
+        <h2>Device Status Distribution</h2>
+        {% if device_count > 0 %}
+        <div style="width: 100%; max-width: 400px; margin: 0 auto;">
+            <canvas id="statusChart"></canvas>
+        </div>
+        {% else %}
+        <p class="no-activity">No devices have been registered.</p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h2>Recent Activity</h2>
+        {% if recent_activity %}
+        <div class="timeline">
+            {% for entry in recent_activity %}
+            <div class="timeline-entry">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content">
+                    <div class="timeline-header">
+                        <strong>{{ entry.device.serial_number }}</strong>
+                        <span class="activity-status">{% if entry.from_status %}{{ entry.from_status }} &rarr; {% endif %}{{ entry.to_status }}</span>
+                    </div>
+                    <div class="timeline-meta">
+                        {{ entry.timestamp|timesince }} ago by {{ entry.changed_by.get_full_name|default:entry.changed_by.username }}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="no-activity">No activity has been recorded yet.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <h2>Devices Requiring Attention</h2>
+    {% if attention_devices %}
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>Serial / Tag</th>
+                    <th>Type</th>
+                    <th>Branch</th>
+                    <th>Status</th>
+                    <th>Received</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for device in attention_devices %}
+                <tr>
+                    <td>{{ device.serial_number }}{% if device.tag_number %} / {{ device.tag_number }}{% endif %}</td>
+                    <td>{{ device.get_device_type_display }}</td>
+                    <td>{{ device.branch.name }}</td>
+                    <td><span class="status-badge status-{{ device.status|lower }}">{{ device.get_status_display }}</span></td>
+                    <td>{{ device.date_received }}</td>
+                    <td><a href="{% url 'device_detail' device.pk %}" class="btn btn-secondary"
+                            style="padding:4px 8px;margin:0;">View &rarr;</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="no-activity">All devices are currently in good standing.</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>Recently Received Devices</h2>
+    {% if recent_devices %}
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>Serial / Tag</th>
+                    <th>Type</th>
+                    <th>Branch</th>
+                    <th>Status</th>
+                    <th>Received</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for device in recent_devices %}
+                <tr>
+                    <td>{{ device.serial_number }}{% if device.tag_number %} / {{ device.tag_number }}{% endif %}</td>
+                    <td>{{ device.get_device_type_display }}</td>
+                    <td>{{ device.branch.name }}</td>
+                    <td><span class="status-badge status-{{ device.status|lower }}">{{ device.get_status_display }}</span></td>
+                    <td>{{ device.date_received }}</td>
+                    <td><a href="{% url 'device_detail' device.pk %}" class="btn btn-secondary"
+                            style="padding:4px 8px;margin:0;">View &rarr;</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="no-activity">No recently received devices.</p>
+    {% endif %}
+</div>
+
+<script src="{% static 'js/chart.min.js' %}"></script>
+<script src="{% static 'js/chartjs-plugin-datalabels.min.js' %}"></script>
+<script>
+    if (document.getElementById('statusChart')) {
+        Chart.register(ChartDataLabels);
+        const ctx = document.getElementById('statusChart').getContext('2d');
+        const labels = {{ chart_labels|safe }};
+        const data = {{ chart_data|safe }};
+
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Devices by Status',
+                data: data,
+                backgroundColor: [
+                    '#4b2e83',
+                    '#f5a623',
+                    '#1b6ca8',
+                    '#196f3d',
+                    '#a84805',
+                    '#8b1e16',
+                    '#495057'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'right',
+                },
+                datalabels: {
+                    color: '#ffffff',
+                    font: {
+                        weight: 'bold',
+                        size: 14
+                    },
+                    formatter: function (value, context) {
+                        return value > 0 ? value : '';
+                    }
+                }
+            }
+        }
+    });
+    }
+</script>
+{% endblock %}

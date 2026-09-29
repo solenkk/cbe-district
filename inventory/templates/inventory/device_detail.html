@@ -5,6 +5,13 @@
 <p>Status: <span class="status-badge status-{{ device.status|lower }}">{{ device.get_status_display }}</span></p>
 <p>Notes: {{ device.condition_notes|default:"None" }}</p>
 
+{% if rejected_recommendation and device.status != 'FOR_DISPOSAL' and device.status != 'DISPOSED' %}
+<div class="alert alert-warning" style="background-color: #fff3cd; color: #856404; padding: 15px; border-radius: 4px; margin-bottom: 20px; border: 1px solid #ffeeba;">
+    <strong>Disposal Rejected:</strong> {{ rejected_recommendation.manager_note|default:"No reason provided." }}<br>
+    <small style="color: #666;">Rejected by {{ rejected_recommendation.reviewed_by.get_full_name|default:rejected_recommendation.reviewed_by.username }} on {{ rejected_recommendation.reviewed_at|date:"M j, Y, g:i a" }}</small>
+</div>
+{% endif %}
+
 {% if device.status == "RETURNED_TO_BRANCH" %}
 <a href="{% url 'device_sleeve' device.pk %}" class="btn" target="_blank">Print Handover Sleeve</a>
 {% endif %}
@@ -25,6 +32,16 @@
 {% else %}
 <p>No further status changes available — this device has reached a final state.</p>
 {% endif %}
+
+{% if device.status == "FOR_DISPOSAL" %}
+<p><a href="{% url 'disposal_recommendation_create' device.pk %}" class="btn" style="background: #e74c3c; color: white;">Recommend Disposal</a></p>
+{% endif %}
+{% endif %}
+
+{% if request.user.role == "MANAGER" and pending_recommendation %}
+<div style="margin-bottom: 1.5rem;">
+    <a href="{% url 'disposal_recommendation_review' pending_recommendation.pk %}" class="btn" style="background: #28a745; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px; font-weight: bold;">Review Disposal Recommendation</a>
+</div>
 {% endif %}
 
 <h3>Installed Salvaged Components</h3>
